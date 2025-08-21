@@ -1,0 +1,668 @@
+-- HUB POBREZA - ROBLOX UNIVERSAL
+-- Compatível com TODOS os executores (Synapse, KRNL, Fluxus, Script-Ware, etc)
+
+-- Aguardar serviços carregarem
+repeat task.wait() until game:IsLoaded()
+
+-- Serviços essenciais
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService") 
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Player local
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Proteção para executores
+local function protectedCall(func, ...)
+    local success, result = pcall(func, ...)
+    return success, result
+end
+
+-- Variáveis globais do sistema
+local HitboxEnabled = false
+local HitboxSize = 20
+local HitboxTransparency = 0.7
+local HitboxColor = Color3.fromRGB(255, 0, 0)
+local HitboxParts = {}
+local Connections = {}
+
+-- Função para criar GUI com proteção
+local function CreateHubGui()
+    local success, ScreenGui = protectedCall(function()
+        -- Tentar criar no CoreGui primeiro (melhor proteção)
+        local gui = Instance.new("ScreenGui")
+        gui.StatusLabel.Text = "📊 Status: HUB carregado e pronto para uso!"
+    gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+end
+
+-- Executar o sistema
+Main()Name = "HUB_POBREZA_" .. tick()
+        gui.ResetOnSpawn = false
+        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        
+        -- Tentar no CoreGui, se falhar vai pro PlayerGui
+        local success = pcall(function()
+            gui.Parent = CoreGui
+        end)
+        
+        if not success then
+            gui.Parent = PlayerGui
+        end
+        
+        return gui
+    end)
+    
+    if not success then
+        error("Falha ao criar ScreenGui")
+    end
+
+    -- Frame principal
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 420, 0, 320)
+    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -160)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true -- Usar Draggable nativo do Roblox
+    MainFrame.Parent = ScreenGui
+
+    -- Gradiente de fundo
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
+    }
+    Gradient.Rotation = 45
+    Gradient.Parent = MainFrame
+
+    -- Corner arredondado
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0, 12)
+    MainCorner.Parent = MainFrame
+
+    -- Stroke para outline
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(255, 193, 7)
+    Stroke.Thickness = 2
+    Stroke.Parent = MainFrame
+
+    -- Header/Título
+    local Header = Instance.new("Frame")
+    Header.Name = "Header"
+    Header.Size = UDim2.new(1, 0, 0, 60)
+    Header.Position = UDim2.new(0, 0, 0, 0)
+    Header.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    Header.BorderSizePixel = 0
+    Header.Parent = MainFrame
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 12)
+    HeaderCorner.Parent = Header
+
+    -- Fix corner bottom
+    local FixFrame = Instance.new("Frame")
+    FixFrame.Size = UDim2.new(1, 0, 0, 12)
+    FixFrame.Position = UDim2.new(0, 0, 1, -12)
+    FixFrame.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    FixFrame.BorderSizePixel = 0
+    FixFrame.Parent = Header
+
+    -- Título
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, -50, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "🏠 HUB POBREZA 🏠"
+    Title.TextColor3 = Color3.fromRGB(0, 0, 0)
+    Title.TextScaled = true
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = Header
+
+    -- Botão fechar
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Name = "CloseButton"
+    CloseButton.Size = UDim2.new(0, 35, 0, 35)
+    CloseButton.Position = UDim2.new(1, -45, 0, 12.5)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+    CloseButton.Text = "✕"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextScaled = true
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.BorderSizePixel = 0
+    CloseButton.Parent = Header
+
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 8)
+    CloseCorner.Parent = CloseButton
+
+    -- Container principal
+    local Container = Instance.new("ScrollingFrame")
+    Container.Name = "Container"
+    Container.Size = UDim2.new(1, -20, 1, -80)
+    Container.Position = UDim2.new(0, 10, 0, 70)
+    Container.BackgroundTransparency = 1
+    Container.ScrollBarThickness = 6
+    Container.ScrollBarImageColor3 = Color3.fromRGB(255, 193, 7)
+    Container.CanvasSize = UDim2.new(0, 0, 0, 250)
+    Container.Parent = MainFrame
+
+    -- Seção Hitbox
+    local HitboxSection = Instance.new("Frame")
+    HitboxSection.Name = "HitboxSection"
+    HitboxSection.Size = UDim2.new(1, 0, 0, 200)
+    HitboxSection.Position = UDim2.new(0, 0, 0, 0)
+    HitboxSection.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    HitboxSection.BorderSizePixel = 0
+    HitboxSection.Parent = Container
+
+    local SectionCorner = Instance.new("UICorner")
+    SectionCorner.CornerRadius = UDim.new(0, 8)
+    SectionCorner.Parent = HitboxSection
+
+    local SectionStroke = Instance.new("UIStroke")
+    SectionStroke.Color = Color3.fromRGB(70, 70, 70)
+    SectionStroke.Thickness = 1
+    SectionStroke.Parent = HitboxSection
+
+    -- Título da seção
+    local SectionTitle = Instance.new("TextLabel")
+    SectionTitle.Name = "SectionTitle"
+    SectionTitle.Size = UDim2.new(1, -20, 0, 35)
+    SectionTitle.Position = UDim2.new(0, 10, 0, 10)
+    SectionTitle.BackgroundTransparency = 1
+    SectionTitle.Text = "👥 HITBOX DOS PLAYERS"
+    SectionTitle.TextColor3 = Color3.fromRGB(255, 193, 7)
+    SectionTitle.TextScaled = true
+    SectionTitle.Font = Enum.Font.GothamBold
+    SectionTitle.Parent = HitboxSection
+
+    -- Botão Toggle
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Name = "ToggleButton"
+    ToggleButton.Size = UDim2.new(0, 180, 0, 40)
+    ToggleButton.Position = UDim2.new(0, 15, 0, 50)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+    ToggleButton.Text = "🔴 DESATIVADO"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextScaled = true
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.Parent = HitboxSection
+
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(0, 6)
+    ToggleCorner.Parent = ToggleButton
+
+    -- Botão Reset/Limpar
+    local ResetButton = Instance.new("TextButton")
+    ResetButton.Name = "ResetButton"
+    ResetButton.Size = UDim2.new(0, 160, 0, 40)
+    ResetButton.Position = UDim2.new(1, -175, 0, 50)
+    ResetButton.BackgroundColor3 = Color3.fromRGB(108, 117, 125)
+    ResetButton.Text = "🧹 LIMPAR"
+    ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ResetButton.TextScaled = true
+    ResetButton.Font = Enum.Font.Gotham
+    ResetButton.BorderSizePixel = 0
+    ResetButton.Parent = HitboxSection
+
+    local ResetCorner = Instance.new("UICorner")
+    ResetCorner.CornerRadius = UDim.new(0, 6)
+    ResetCorner.Parent = ResetButton
+
+    -- Label Tamanho
+    local SizeLabel = Instance.new("TextLabel")
+    SizeLabel.Name = "SizeLabel"
+    SizeLabel.Size = UDim2.new(0, 120, 0, 25)
+    SizeLabel.Position = UDim2.new(0, 15, 0, 100)
+    SizeLabel.BackgroundTransparency = 1
+    SizeLabel.Text = "📏 Tamanho: " .. HitboxSize
+    SizeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SizeLabel.TextScaled = true
+    SizeLabel.Font = Enum.Font.Gotham
+    SizeLabel.Parent = HitboxSection
+
+    -- Slider Tamanho
+    local SizeSliderBG = Instance.new("Frame")
+    SizeSliderBG.Name = "SizeSliderBG"
+    SizeSliderBG.Size = UDim2.new(0, 230, 0, 25)
+    SizeSliderBG.Position = UDim2.new(0, 145, 0, 100)
+    SizeSliderBG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    SizeSliderBG.BorderSizePixel = 0
+    SizeSliderBG.Parent = HitboxSection
+
+    local SizeSliderCorner = Instance.new("UICorner")
+    SizeSliderCorner.CornerRadius = UDim.new(0, 12)
+    SizeSliderCorner.Parent = SizeSliderBG
+
+    local SizeSliderFill = Instance.new("Frame")
+    SizeSliderFill.Name = "SizeSliderFill"
+    SizeSliderFill.Size = UDim2.new(0.2, 0, 1, 0)
+    SizeSliderFill.Position = UDim2.new(0, 0, 0, 0)
+    SizeSliderFill.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    SizeSliderFill.BorderSizePixel = 0
+    SizeSliderFill.Parent = SizeSliderBG
+
+    local FillCorner = Instance.new("UICorner")
+    FillCorner.CornerRadius = UDim.new(0, 12)
+    FillCorner.Parent = SizeSliderFill
+
+    local SizeSliderButton = Instance.new("TextButton")
+    SizeSliderButton.Name = "SizeSliderButton"
+    SizeSliderButton.Size = UDim2.new(0, 25, 0, 25)
+    SizeSliderButton.Position = UDim2.new(0.2, -12, 0, 0)
+    SizeSliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    SizeSliderButton.Text = ""
+    SizeSliderButton.BorderSizePixel = 0
+    SizeSliderButton.Parent = SizeSliderBG
+
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(1, 0)
+    ButtonCorner.Parent = SizeSliderButton
+
+    -- Label Transparência
+    local TransLabel = Instance.new("TextLabel")
+    TransLabel.Name = "TransLabel"
+    TransLabel.Size = UDim2.new(0, 140, 0, 25)
+    TransLabel.Position = UDim2.new(0, 15, 0, 135)
+    TransLabel.BackgroundTransparency = 1
+    TransLabel.Text = "👁️ Transparência: " .. math.floor(HitboxTransparency * 100) .. "%"
+    TransLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TransLabel.TextScaled = true
+    TransLabel.Font = Enum.Font.Gotham
+    TransLabel.Parent = HitboxSection
+
+    -- Slider Transparência (similar ao de tamanho)
+    local TransSliderBG = Instance.new("Frame")
+    TransSliderBG.Name = "TransSliderBG"
+    TransSliderBG.Size = UDim2.new(0, 210, 0, 25)
+    TransSliderBG.Position = UDim2.new(0, 165, 0, 135)
+    TransSliderBG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    TransSliderBG.BorderSizePixel = 0
+    TransSliderBG.Parent = HitboxSection
+
+    local TransSliderCorner = Instance.new("UICorner")
+    TransSliderCorner.CornerRadius = UDim.new(0, 12)
+    TransSliderCorner.Parent = TransSliderBG
+
+    local TransSliderFill = Instance.new("Frame")
+    TransSliderFill.Name = "TransSliderFill"
+    TransSliderFill.Size = UDim2.new(HitboxTransparency, 0, 1, 0)
+    TransSliderFill.Position = UDim2.new(0, 0, 0, 0)
+    TransSliderFill.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+    TransSliderFill.BorderSizePixel = 0
+    TransSliderFill.Parent = TransSliderBG
+
+    local TransFillCorner = Instance.new("UICorner")
+    TransFillCorner.CornerRadius = UDim.new(0, 12)
+    TransFillCorner.Parent = TransSliderFill
+
+    local TransSliderButton = Instance.new("TextButton")
+    TransSliderButton.Name = "TransSliderButton"
+    TransSliderButton.Size = UDim2.new(0, 25, 0, 25)
+    TransSliderButton.Position = UDim2.new(HitboxTransparency, -12, 0, 0)
+    TransSliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    TransSliderButton.Text = ""
+    TransSliderButton.BorderSizePixel = 0
+    TransSliderButton.Parent = TransSliderBG
+
+    local TransButtonCorner = Instance.new("UICorner")
+    TransButtonCorner.CornerRadius = UDim.new(1, 0)
+    TransButtonCorner.Parent = TransSliderButton
+
+    -- Status
+    local StatusFrame = Instance.new("Frame")
+    StatusFrame.Name = "StatusFrame"
+    StatusFrame.Size = UDim2.new(1, -20, 0, 40)
+    StatusFrame.Position = UDim2.new(0, 10, 1, -50)
+    StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    StatusFrame.BorderSizePixel = 0
+    StatusFrame.Parent = MainFrame
+
+    local StatusCorner = Instance.new("UICorner")
+    StatusCorner.CornerRadius = UDim.new(0, 8)
+    StatusCorner.Parent = StatusFrame
+
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Name = "StatusLabel"
+    StatusLabel.Size = UDim2.new(1, -20, 1, 0)
+    StatusLabel.Position = UDim2.new(0, 10, 0, 0)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "📊 Status: HUB carregado - Aguardando ação..."
+    StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+    StatusLabel.TextScaled = true
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.Parent = StatusFrame
+
+    return {
+        ScreenGui = ScreenGui,
+        MainFrame = MainFrame,
+        ToggleButton = ToggleButton,
+        ResetButton = ResetButton,
+        SizeSliderBG = SizeSliderBG,
+        SizeSliderButton = SizeSliderButton,
+        SizeSliderFill = SizeSliderFill,
+        SizeLabel = SizeLabel,
+        TransSliderBG = TransSliderBG,
+        TransSliderButton = TransSliderButton,
+        TransSliderFill = TransSliderFill,
+        TransLabel = TransLabel,
+        StatusLabel = StatusLabel,
+        CloseButton = CloseButton
+    }
+end
+
+-- Função para criar hitbox otimizada
+local function CreateHitbox(player)
+    if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return false
+    end
+    
+    -- Remover hitbox existente
+    if HitboxParts[player] then
+        HitboxParts[player]:Destroy()
+        HitboxParts[player] = nil
+    end
+    
+    local success, hitbox = protectedCall(function()
+        local character = player.Character
+        local hrp = character.HumanoidRootPart
+        
+        -- Criar hitbox
+        local part = Instance.new("Part")
+        part.Name = "POBREZA_HITBOX_" .. player.Name
+        part.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+        part.Material = Enum.Material.Neon
+        part.BrickColor = BrickColor.new("Really red")
+        part.Color = HitboxColor
+        part.Transparency = HitboxTransparency
+        part.CanCollide = false
+        part.CanTouch = false
+        part.Anchored = false
+        part.Shape = Enum.PartType.Ball
+        part.TopSurface = Enum.SurfaceType.Smooth
+        part.BottomSurface = Enum.SurfaceType.Smooth
+        
+        -- Tentar parentar no workspace
+        part.Parent = workspace
+        
+        -- Criar weld
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = hrp
+        weld.Part1 = part
+        weld.Parent = part
+        
+        -- Adicionar efeito visual
+        local pointLight = Instance.new("PointLight")
+        pointLight.Color = Color3.fromRGB(255, 0, 0)
+        pointLight.Brightness = 0.5
+        pointLight.Range = HitboxSize
+        pointLight.Parent = part
+        
+        return part
+    end)
+    
+    if success and hitbox then
+        HitboxParts[player] = hitbox
+        return true
+    end
+    
+    return false
+end
+
+-- Função para remover hitbox
+local function RemoveHitbox(player)
+    if HitboxParts[player] then
+        HitboxParts[player]:Destroy()
+        HitboxParts[player] = nil
+    end
+end
+
+-- Função para limpar todas as hitboxes
+local function ClearAllHitboxes()
+    for player, hitbox in pairs(HitboxParts) do
+        if hitbox and hitbox.Parent then
+            hitbox:Destroy()
+        end
+        HitboxParts[player] = nil
+    end
+    HitboxParts = {}
+end
+
+-- Função para atualizar hitboxes
+local function UpdateAllHitboxes()
+    for player, hitbox in pairs(HitboxParts) do
+        if hitbox and hitbox.Parent then
+            hitbox.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+            hitbox.Transparency = HitboxTransparency
+            hitbox.Color = HitboxColor
+            
+            -- Atualizar luz
+            local light = hitbox:FindFirstChild("PointLight")
+            if light then
+                light.Range = HitboxSize
+            end
+        end
+    end
+end
+
+-- Toggle system
+local function ToggleHitbox(gui)
+    HitboxEnabled = not HitboxEnabled
+    
+    if HitboxEnabled then
+        -- Ativar para todos os players
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                task.spawn(function()
+                    CreateHitbox(player)
+                end)
+            end
+        end
+        
+        gui.ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
+        gui.ToggleButton.Text = "🟢 ATIVADO"
+        gui.StatusLabel.Text = "📊 Status: Sistema ATIVO - Hitboxes aplicadas!"
+        gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+        
+    else
+        -- Desativar
+        ClearAllHitboxes()
+        
+        gui.ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+        gui.ToggleButton.Text = "🔴 DESATIVADO"
+        gui.StatusLabel.Text = "📊 Status: Sistema DESATIVADO"
+        gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
+    end
+    
+    return HitboxEnabled
+end
+
+-- Função para setup de sliders
+local function SetupSliders(gui)
+    -- Size Slider
+    local sizeSliding = false
+    
+    gui.SizeSliderButton.MouseButton1Down:Connect(function()
+        sizeSliding = true
+    end)
+    
+    gui.SizeSliderBG.MouseButton1Down:Connect(function()
+        sizeSliding = true
+    end)
+    
+    Connections[#Connections + 1] = UserInputService.InputChanged:Connect(function(input)
+        if sizeSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local sliderPos = gui.SizeSliderBG.AbsolutePosition.X
+            local sliderSize = gui.SizeSliderBG.AbsoluteSize.X
+            local mouseX = input.Position.X
+            
+            local percentage = math.clamp((mouseX - sliderPos) / sliderSize, 0, 1)
+            HitboxSize = math.floor(5 + (percentage * 95)) -- 5 a 100
+            
+            gui.SizeSliderButton.Position = UDim2.new(percentage, -12, 0, 0)
+            gui.SizeSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            gui.SizeLabel.Text = "📏 Tamanho: " .. HitboxSize
+            
+            if HitboxEnabled then
+                UpdateAllHitboxes()
+            end
+        end
+    end)
+    
+    Connections[#Connections + 1] = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            sizeSliding = false
+        end
+    end)
+    
+    -- Transparency Slider
+    local transSliding = false
+    
+    gui.TransSliderButton.MouseButton1Down:Connect(function()
+        transSliding = true
+    end)
+    
+    gui.TransSliderBG.MouseButton1Down:Connect(function()
+        transSliding = true
+    end)
+    
+    Connections[#Connections + 1] = UserInputService.InputChanged:Connect(function(input)
+        if transSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local sliderPos = gui.TransSliderBG.AbsolutePosition.X
+            local sliderSize = gui.TransSliderBG.AbsoluteSize.X
+            local mouseX = input.Position.X
+            
+            local percentage = math.clamp((mouseX - sliderPos) / sliderSize, 0, 1)
+            HitboxTransparency = percentage
+            
+            gui.TransSliderButton.Position = UDim2.new(percentage, -12, 0, 0)
+            gui.TransSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+            gui.TransLabel.Text = "👁️ Transparência: " .. math.floor(HitboxTransparency * 100) .. "%"
+            
+            if HitboxEnabled then
+                UpdateAllHitboxes()
+            end
+        end
+    end)
+    
+    Connections[#Connections + 1] = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            transSliding = false
+        end
+    end)
+end
+
+-- Função principal de execução
+local function Main()
+    -- Criar GUI
+    local gui = CreateHubGui()
+    
+    -- Setup dos sliders
+    SetupSliders(gui)
+    
+    -- Conectar eventos dos botões
+    gui.ToggleButton.MouseButton1Click:Connect(function()
+        ToggleHitbox(gui)
+    end)
+    
+    gui.ResetButton.MouseButton1Click:Connect(function()
+        ClearAllHitboxes()
+        gui.StatusLabel.Text = "📊 Status: Hitboxes removidas!"
+        gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
+        
+        task.wait(2)
+        
+        if HitboxEnabled then
+            gui.StatusLabel.Text = "📊 Status: Sistema ATIVO - Hitboxes aplicadas!"
+            gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+        else
+            gui.StatusLabel.Text = "📊 Status: Sistema DESATIVADO"
+            gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
+        end
+    end)
+    
+    gui.CloseButton.MouseButton1Click:Connect(function()
+        ClearAllHitboxes()
+        
+        -- Desconectar todas as conexões
+        for _, connection in pairs(Connections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
+        
+        gui.ScreenGui:Destroy()
+    end)
+    
+    -- Eventos de players
+    Connections[#Connections + 1] = Players.PlayerAdded:Connect(function(player)
+        if player ~= LocalPlayer then
+            Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
+                task.wait(1) -- Aguardar character carregar
+                if HitboxEnabled then
+                    CreateHitbox(player)
+                end
+            end)
+        end
+    end)
+    
+    Connections[#Connections + 1] = Players.PlayerRemoving:Connect(function(player)
+        RemoveHitbox(player)
+    end)
+    
+    -- Setup para players existentes
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if player.Character then
+                -- Player já tem character
+                Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
+                    task.wait(1)
+                    if HitboxEnabled then
+                        CreateHitbox(player)
+                    end
+                end)
+            else
+                -- Aguardar character spawnar
+                Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
+                    task.wait(1)
+                    if HitboxEnabled then
+                        CreateHitbox(player)
+                    end
+                end)
+            end
+        end
+    end
+    
+    -- Sistema de monitoramento
+    task.spawn(function()
+        while gui.ScreenGui and gui.ScreenGui.Parent do
+            task.wait(3)
+            if HitboxEnabled then
+                local count = 0
+                for _ in pairs(HitboxParts) do
+                    count = count + 1
+                end
+                gui.StatusLabel.Text = "📊 Status: " .. count .. " hitboxes ativas"
+                gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+            end
+        end
+    end)
+    
+    -- Mensagens de sucesso
+    print("🏠============================🏠")
+    print("🎯 HUB POBREZA CARREGADO! 🎯")
+    print("🏠============================🏠")
+    print("✅ Compatível com TODOS executores")
+    print("✅ Sistema de hitbox otimizado") 
+    print("✅ Interface moderna e responsiva")
+    print("✅ Detecção automática de players")
+    print("✅ Controles avançados de tamanho/transparência")
+    print("🚀 Pronto para dominar! 🚀")
+    
+    gui.
