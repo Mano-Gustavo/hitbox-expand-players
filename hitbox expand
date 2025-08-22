@@ -1,668 +1,882 @@
--- HUB POBREZA - ROBLOX UNIVERSAL
--- Compatível com TODOS os executores (Synapse, KRNL, Fluxus, Script-Ware, etc)
-
--- Aguardar serviços carregarem
-repeat task.wait() until game:IsLoaded()
-
--- Serviços essenciais
+-- HUB POBREZA V3.0 - PREMIUM EDITION
+-- Design completamente redesenhado e otimizado
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService") 
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-
--- Player local
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Proteção para executores
-local function protectedCall(func, ...)
-    local success, result = pcall(func, ...)
-    return success, result
-end
+-- ===== CONFIGURAÇÕES =====
+local config = {
+    headSize = 20,
+    bodySize = 20,
+    currentLang = "pt",
+    bodyEnabled = false,
+    headEnabled = false,
+    guiVisible = true,
+    theme = "dark" -- dark/light
+}
 
--- Variáveis globais do sistema
-local HitboxEnabled = false
-local HitboxSize = 20
-local HitboxTransparency = 0.7
-local HitboxColor = Color3.fromRGB(255, 0, 0)
-local HitboxParts = {}
-local Connections = {}
+local originals = {}
+local connections = {}
+local gui = {}
 
--- Função para criar GUI com proteção
-local function CreateHubGui()
-    local success, ScreenGui = protectedCall(function()
-        -- Tentar criar no CoreGui primeiro (melhor proteção)
-        local gui = Instance.new("ScreenGui")
-        gui.StatusLabel.Text = "📊 Status: HUB carregado e pronto para uso!"
-    gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-end
-
--- Executar o sistema
-Main()Name = "HUB_POBREZA_" .. tick()
-        gui.ResetOnSpawn = false
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        
-        -- Tentar no CoreGui, se falhar vai pro PlayerGui
-        local success = pcall(function()
-            gui.Parent = CoreGui
-        end)
-        
-        if not success then
-            gui.Parent = PlayerGui
-        end
-        
-        return gui
-    end)
-    
-    if not success then
-        error("Falha ao criar ScreenGui")
-    end
-
-    -- Frame principal
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 420, 0, 320)
-    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -160)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Active = true
-    MainFrame.Draggable = true -- Usar Draggable nativo do Roblox
-    MainFrame.Parent = ScreenGui
-
-    -- Gradiente de fundo
-    local Gradient = Instance.new("UIGradient")
-    Gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
+-- ===== SISTEMA DE IDIOMAS =====
+local texts = {
+    pt = {
+        title = "🔥 HUB POBREZA V3.0",
+        subtitle = "PREMIUM EDITION",
+        bodyBtn = "💀 HITBOX CORPO",
+        headBtn = "🎯 HITBOX CABEÇA",
+        langBtn = "🌐 ENGLISH",
+        sizeLabel = "TAMANHO HITBOX",
+        statusOn = "ATIVADO",
+        statusOff = "DESATIVADO",
+        credits = "Desenvolvido por Poverty Team",
+        hotkey = "Pressione 'F' para mostrar/ocultar",
+        activeCount = "recursos ativos"
+    },
+    en = {
+        title = "🔥 POVERTY HUB V3.0",
+        subtitle = "PREMIUM EDITION",
+        bodyBtn = "💀 BODY HITBOX",
+        headBtn = "🎯 HEAD HITBOX",
+        langBtn = "🌐 PORTUGUÊS",
+        sizeLabel = "HITBOX SIZE",
+        statusOn = "ENABLED",
+        statusOff = "DISABLED",
+        credits = "Developed by Poverty Team",
+        hotkey = "Press 'F' to show/hide",
+        activeCount = "features active"
     }
-    Gradient.Rotation = 45
-    Gradient.Parent = MainFrame
+}
 
-    -- Corner arredondado
-    local MainCorner = Instance.new("UICorner")
-    MainCorner.CornerRadius = UDim.new(0, 12)
-    MainCorner.Parent = MainFrame
+-- ===== CRIAÇÃO DA GUI =====
+local function createGUI()
+    -- ScreenGui Principal
+    gui.screen = Instance.new("ScreenGui")
+    gui.screen.Name = "PovertyHubV3"
+    gui.screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    gui.screen.ResetOnSpawn = false
+    gui.screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    -- Frame Principal
+    gui.main = Instance.new("Frame")
+    gui.main.Name = "MainFrame"
+    gui.main.Size = UDim2.new(0, 320, 0, 400)
+    gui.main.Position = UDim2.new(0, 20, 0.5, -200)
+    gui.main.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+    gui.main.BorderSizePixel = 0
+    gui.main.ClipsDescendants = true
+    gui.main.Parent = gui.screen
+    
+    -- Efeitos visuais do frame principal
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 15)
+    mainCorner.Parent = gui.main
+    
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Color = Color3.new(1, 0.85, 0)
+    mainStroke.Thickness = 3
+    mainStroke.Parent = gui.main
+    
+    local mainGradient = Instance.new("UIGradient")
+    mainGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(0.08, 0.08, 0.08)),
+        ColorSequenceKeypoint.new(1, Color3.new(0.02, 0.02, 0.02))
+    })
+    mainGradient.Rotation = 135
+    mainGradient.Parent = gui.main
+    
+    -- Sombra do frame
+    local shadow = Instance.new("Frame")
+    shadow.Name = "Shadow"
+    shadow.Size = UDim2.new(1, 6, 1, 6)
+    shadow.Position = UDim2.new(0, -3, 0, -3)
+    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+    shadow.BackgroundTransparency = 0.7
+    shadow.ZIndex = gui.main.ZIndex - 1
+    shadow.Parent = gui.main
+    
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 18)
+    shadowCorner.Parent = shadow
+    
+    -- ===== HEADER =====
+    gui.header = Instance.new("Frame")
+    gui.header.Name = "Header"
+    gui.header.Size = UDim2.new(1, 0, 0, 70)
+    gui.header.Position = UDim2.new(0, 0, 0, 0)
+    gui.header.BackgroundColor3 = Color3.new(1, 0.85, 0)
+    gui.header.BorderSizePixel = 0
+    gui.header.Parent = gui.main
+    
+    local headerCorner = Instance.new("UICorner")
+    headerCorner.CornerRadius = UDim.new(0, 15)
+    headerCorner.Parent = gui.header
+    
+    local headerGradient = Instance.new("UIGradient")
+    headerGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(1, 0.9, 0.1)),
+        ColorSequenceKeypoint.new(1, Color3.new(1, 0.75, 0))
+    })
+    headerGradient.Rotation = 90
+    headerGradient.Parent = gui.header
+    
+    -- Título principal
+    gui.title = Instance.new("TextLabel")
+    gui.title.Name = "Title"
+    gui.title.Size = UDim2.new(1, -60, 0, 35)
+    gui.title.Position = UDim2.new(0, 15, 0, 5)
+    gui.title.BackgroundTransparency = 1
+    gui.title.TextColor3 = Color3.new(0, 0, 0)
+    gui.title.Font = Enum.Font.GothamBold
+    gui.title.TextSize = 18
+    gui.title.TextXAlignment = Enum.TextXAlignment.Left
+    gui.title.TextYAlignment = Enum.TextYAlignment.Center
+    gui.title.Parent = gui.header
+    
+    -- Subtítulo
+    gui.subtitle = Instance.new("TextLabel")
+    gui.subtitle.Name = "Subtitle"
+    gui.subtitle.Size = UDim2.new(1, -60, 0, 20)
+    gui.subtitle.Position = UDim2.new(0, 15, 0, 35)
+    gui.subtitle.BackgroundTransparency = 1
+    gui.subtitle.TextColor3 = Color3.new(0.2, 0.2, 0.2)
+    gui.subtitle.Font = Enum.Font.Gotham
+    gui.subtitle.TextSize = 12
+    gui.subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    gui.subtitle.TextYAlignment = Enum.TextYAlignment.Center
+    gui.subtitle.Parent = gui.header
+    
+    -- Botão de minimizar/fechar
+    gui.closeBtn = Instance.new("TextButton")
+    gui.closeBtn.Name = "CloseButton"
+    gui.closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    gui.closeBtn.Position = UDim2.new(1, -40, 0, 10)
+    gui.closeBtn.BackgroundColor3 = Color3.new(1, 0.2, 0.2)
+    gui.closeBtn.Text = "✕"
+    gui.closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    gui.closeBtn.Font = Enum.Font.GothamBold
+    gui.closeBtn.TextSize = 16
+    gui.closeBtn.BorderSizePixel = 0
+    gui.closeBtn.Parent = gui.header
+    
+    local closeBtnCorner = Instance.new("UICorner")
+    closeBtnCorner.CornerRadius = UDim.new(0, 6)
+    closeBtnCorner.Parent = gui.closeBtn
+    
+    -- ===== ÁREA DE CONTEÚDO =====
+    gui.content = Instance.new("ScrollingFrame")
+    gui.content.Name = "Content"
+    gui.content.Size = UDim2.new(1, -20, 1, -90)
+    gui.content.Position = UDim2.new(0, 10, 0, 80)
+    gui.content.BackgroundTransparency = 1
+    gui.content.BorderSizePixel = 0
+    gui.content.ScrollBarThickness = 6
+    gui.content.ScrollBarImageColor3 = Color3.new(1, 0.85, 0)
+    gui.content.CanvasSize = UDim2.new(0, 0, 0, 500)
+    gui.content.Parent = gui.main
+    
+    -- ===== STATUS GERAL =====
+    gui.statusFrame = Instance.new("Frame")
+    gui.statusFrame.Name = "StatusFrame"
+    gui.statusFrame.Size = UDim2.new(1, 0, 0, 50)
+    gui.statusFrame.Position = UDim2.new(0, 0, 0, 10)
+    gui.statusFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    gui.statusFrame.BorderSizePixel = 0
+    gui.statusFrame.Parent = gui.content
+    
+    local statusCorner = Instance.new("UICorner")
+    statusCorner.CornerRadius = UDim.new(0, 10)
+    statusCorner.Parent = gui.statusFrame
+    
+    local statusStroke = Instance.new("UIStroke")
+    statusStroke.Color = Color3.new(0.3, 0.3, 0.3)
+    statusStroke.Thickness = 1
+    statusStroke.Parent = gui.statusFrame
+    
+    gui.statusLabel = Instance.new("TextLabel")
+    gui.statusLabel.Name = "StatusLabel"
+    gui.statusLabel.Size = UDim2.new(1, -20, 1, 0)
+    gui.statusLabel.Position = UDim2.new(0, 10, 0, 0)
+    gui.statusLabel.BackgroundTransparency = 1
+    gui.statusLabel.TextColor3 = Color3.new(1, 1, 1)
+    gui.statusLabel.Font = Enum.Font.Gotham
+    gui.statusLabel.TextSize = 14
+    gui.statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    gui.statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+    gui.statusLabel.Parent = gui.statusFrame
+    
+    -- ===== CONTROLE DE TAMANHO =====
+    gui.sizeFrame = Instance.new("Frame")
+    gui.sizeFrame.Name = "SizeFrame"
+    gui.sizeFrame.Size = UDim2.new(1, 0, 0, 80)
+    gui.sizeFrame.Position = UDim2.new(0, 0, 0, 70)
+    gui.sizeFrame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+    gui.sizeFrame.BorderSizePixel = 0
+    gui.sizeFrame.Parent = gui.content
+    
+    local sizeCorner = Instance.new("UICorner")
+    sizeCorner.CornerRadius = UDim.new(0, 10)
+    sizeCorner.Parent = gui.sizeFrame
+    
+    local sizeStroke = Instance.new("UIStroke")
+    sizeStroke.Color = Color3.new(1, 0.85, 0)
+    sizeStroke.Thickness = 1
+    sizeStroke.Parent = gui.sizeFrame
+    
+    gui.sizeLabel = Instance.new("TextLabel")
+    gui.sizeLabel.Name = "SizeLabel"
+    gui.sizeLabel.Size = UDim2.new(1, -20, 0, 25)
+    gui.sizeLabel.Position = UDim2.new(0, 10, 0, 5)
+    gui.sizeLabel.BackgroundTransparency = 1
+    gui.sizeLabel.TextColor3 = Color3.new(1, 0.85, 0)
+    gui.sizeLabel.Font = Enum.Font.GothamBold
+    gui.sizeLabel.TextSize = 14
+    gui.sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    gui.sizeLabel.Parent = gui.sizeFrame
+    
+    -- Slider
+    gui.sliderBG = Instance.new("Frame")
+    gui.sliderBG.Name = "SliderBackground"
+    gui.sliderBG.Size = UDim2.new(0.8, 0, 0, 6)
+    gui.sliderBG.Position = UDim2.new(0.1, 0, 0, 40)
+    gui.sliderBG.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    gui.sliderBG.BorderSizePixel = 0
+    gui.sliderBG.Parent = gui.sizeFrame
+    
+    local sliderBGCorner = Instance.new("UICorner")
+    sliderBGCorner.CornerRadius = UDim.new(0, 3)
+    sliderBGCorner.Parent = gui.sliderBG
+    
+    gui.sliderFill = Instance.new("Frame")
+    gui.sliderFill.Name = "SliderFill"
+    gui.sliderFill.Size = UDim2.new(0.33, 0, 1, 0)
+    gui.sliderFill.Position = UDim2.new(0, 0, 0, 0)
+    gui.sliderFill.BackgroundColor3 = Color3.new(1, 0.85, 0)
+    gui.sliderFill.BorderSizePixel = 0
+    gui.sliderFill.Parent = gui.sliderBG
+    
+    local sliderFillCorner = Instance.new("UICorner")
+    sliderFillCorner.CornerRadius = UDim.new(0, 3)
+    sliderFillCorner.Parent = gui.sliderFill
+    
+    gui.sliderHandle = Instance.new("Frame")
+    gui.sliderHandle.Name = "SliderHandle"
+    gui.sliderHandle.Size = UDim2.new(0, 20, 0, 20)
+    gui.sliderHandle.Position = UDim2.new(0.33, -10, 0.5, -10)
+    gui.sliderHandle.BackgroundColor3 = Color3.new(1, 1, 1)
+    gui.sliderHandle.BorderSizePixel = 0
+    gui.sliderHandle.Parent = gui.sliderBG
+    
+    local sliderHandleCorner = Instance.new("UICorner")
+    sliderHandleCorner.CornerRadius = UDim.new(0, 10)
+    sliderHandleCorner.Parent = gui.sliderHandle
+    
+    local sliderHandleStroke = Instance.new("UIStroke")
+    sliderHandleStroke.Color = Color3.new(1, 0.85, 0)
+    sliderHandleStroke.Thickness = 2
+    sliderHandleStroke.Parent = gui.sliderHandle
+    
+    gui.sizeValue = Instance.new("TextLabel")
+    gui.sizeValue.Name = "SizeValue"
+    gui.sizeValue.Size = UDim2.new(0, 50, 0, 25)
+    gui.sizeValue.Position = UDim2.new(1, -60, 0, 50)
+    gui.sizeValue.BackgroundTransparency = 1
+    gui.sizeValue.TextColor3 = Color3.new(1, 1, 1)
+    gui.sizeValue.Font = Enum.Font.GothamBold
+    gui.sizeValue.TextSize = 16
+    gui.sizeValue.TextXAlignment = Enum.TextXAlignment.Center
+    gui.sizeValue.Parent = gui.sizeFrame
+end
 
-    -- Stroke para outline
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(255, 193, 7)
-    Stroke.Thickness = 2
-    Stroke.Parent = MainFrame
-
-    -- Header/Título
-    local Header = Instance.new("Frame")
-    Header.Name = "Header"
-    Header.Size = UDim2.new(1, 0, 0, 60)
-    Header.Position = UDim2.new(0, 0, 0, 0)
-    Header.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    Header.BorderSizePixel = 0
-    Header.Parent = MainFrame
-
-    local HeaderCorner = Instance.new("UICorner")
-    HeaderCorner.CornerRadius = UDim.new(0, 12)
-    HeaderCorner.Parent = Header
-
-    -- Fix corner bottom
-    local FixFrame = Instance.new("Frame")
-    FixFrame.Size = UDim2.new(1, 0, 0, 12)
-    FixFrame.Position = UDim2.new(0, 0, 1, -12)
-    FixFrame.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    FixFrame.BorderSizePixel = 0
-    FixFrame.Parent = Header
-
-    -- Título
-    local Title = Instance.new("TextLabel")
-    Title.Name = "Title"
-    Title.Size = UDim2.new(1, -50, 1, 0)
-    Title.Position = UDim2.new(0, 15, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "🏠 HUB POBREZA 🏠"
-    Title.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Title.TextScaled = true
-    Title.Font = Enum.Font.GothamBold
-    Title.Parent = Header
-
-    -- Botão fechar
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Name = "CloseButton"
-    CloseButton.Size = UDim2.new(0, 35, 0, 35)
-    CloseButton.Position = UDim2.new(1, -45, 0, 12.5)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    CloseButton.Text = "✕"
-    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseButton.TextScaled = true
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.BorderSizePixel = 0
-    CloseButton.Parent = Header
-
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 8)
-    CloseCorner.Parent = CloseButton
-
-    -- Container principal
-    local Container = Instance.new("ScrollingFrame")
-    Container.Name = "Container"
-    Container.Size = UDim2.new(1, -20, 1, -80)
-    Container.Position = UDim2.new(0, 10, 0, 70)
-    Container.BackgroundTransparency = 1
-    Container.ScrollBarThickness = 6
-    Container.ScrollBarImageColor3 = Color3.fromRGB(255, 193, 7)
-    Container.CanvasSize = UDim2.new(0, 0, 0, 250)
-    Container.Parent = MainFrame
-
-    -- Seção Hitbox
-    local HitboxSection = Instance.new("Frame")
-    HitboxSection.Name = "HitboxSection"
-    HitboxSection.Size = UDim2.new(1, 0, 0, 200)
-    HitboxSection.Position = UDim2.new(0, 0, 0, 0)
-    HitboxSection.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    HitboxSection.BorderSizePixel = 0
-    HitboxSection.Parent = Container
-
-    local SectionCorner = Instance.new("UICorner")
-    SectionCorner.CornerRadius = UDim.new(0, 8)
-    SectionCorner.Parent = HitboxSection
-
-    local SectionStroke = Instance.new("UIStroke")
-    SectionStroke.Color = Color3.fromRGB(70, 70, 70)
-    SectionStroke.Thickness = 1
-    SectionStroke.Parent = HitboxSection
-
-    -- Título da seção
-    local SectionTitle = Instance.new("TextLabel")
-    SectionTitle.Name = "SectionTitle"
-    SectionTitle.Size = UDim2.new(1, -20, 0, 35)
-    SectionTitle.Position = UDim2.new(0, 10, 0, 10)
-    SectionTitle.BackgroundTransparency = 1
-    SectionTitle.Text = "👥 HITBOX DOS PLAYERS"
-    SectionTitle.TextColor3 = Color3.fromRGB(255, 193, 7)
-    SectionTitle.TextScaled = true
-    SectionTitle.Font = Enum.Font.GothamBold
-    SectionTitle.Parent = HitboxSection
-
-    -- Botão Toggle
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Name = "ToggleButton"
-    ToggleButton.Size = UDim2.new(0, 180, 0, 40)
-    ToggleButton.Position = UDim2.new(0, 15, 0, 50)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    ToggleButton.Text = "🔴 DESATIVADO"
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextScaled = true
-    ToggleButton.Font = Enum.Font.GothamBold
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Parent = HitboxSection
-
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(0, 6)
-    ToggleCorner.Parent = ToggleButton
-
-    -- Botão Reset/Limpar
-    local ResetButton = Instance.new("TextButton")
-    ResetButton.Name = "ResetButton"
-    ResetButton.Size = UDim2.new(0, 160, 0, 40)
-    ResetButton.Position = UDim2.new(1, -175, 0, 50)
-    ResetButton.BackgroundColor3 = Color3.fromRGB(108, 117, 125)
-    ResetButton.Text = "🧹 LIMPAR"
-    ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ResetButton.TextScaled = true
-    ResetButton.Font = Enum.Font.Gotham
-    ResetButton.BorderSizePixel = 0
-    ResetButton.Parent = HitboxSection
-
-    local ResetCorner = Instance.new("UICorner")
-    ResetCorner.CornerRadius = UDim.new(0, 6)
-    ResetCorner.Parent = ResetButton
-
-    -- Label Tamanho
-    local SizeLabel = Instance.new("TextLabel")
-    SizeLabel.Name = "SizeLabel"
-    SizeLabel.Size = UDim2.new(0, 120, 0, 25)
-    SizeLabel.Position = UDim2.new(0, 15, 0, 100)
-    SizeLabel.BackgroundTransparency = 1
-    SizeLabel.Text = "📏 Tamanho: " .. HitboxSize
-    SizeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SizeLabel.TextScaled = true
-    SizeLabel.Font = Enum.Font.Gotham
-    SizeLabel.Parent = HitboxSection
-
-    -- Slider Tamanho
-    local SizeSliderBG = Instance.new("Frame")
-    SizeSliderBG.Name = "SizeSliderBG"
-    SizeSliderBG.Size = UDim2.new(0, 230, 0, 25)
-    SizeSliderBG.Position = UDim2.new(0, 145, 0, 100)
-    SizeSliderBG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    SizeSliderBG.BorderSizePixel = 0
-    SizeSliderBG.Parent = HitboxSection
-
-    local SizeSliderCorner = Instance.new("UICorner")
-    SizeSliderCorner.CornerRadius = UDim.new(0, 12)
-    SizeSliderCorner.Parent = SizeSliderBG
-
-    local SizeSliderFill = Instance.new("Frame")
-    SizeSliderFill.Name = "SizeSliderFill"
-    SizeSliderFill.Size = UDim2.new(0.2, 0, 1, 0)
-    SizeSliderFill.Position = UDim2.new(0, 0, 0, 0)
-    SizeSliderFill.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    SizeSliderFill.BorderSizePixel = 0
-    SizeSliderFill.Parent = SizeSliderBG
-
-    local FillCorner = Instance.new("UICorner")
-    FillCorner.CornerRadius = UDim.new(0, 12)
-    FillCorner.Parent = SizeSliderFill
-
-    local SizeSliderButton = Instance.new("TextButton")
-    SizeSliderButton.Name = "SizeSliderButton"
-    SizeSliderButton.Size = UDim2.new(0, 25, 0, 25)
-    SizeSliderButton.Position = UDim2.new(0.2, -12, 0, 0)
-    SizeSliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    SizeSliderButton.Text = ""
-    SizeSliderButton.BorderSizePixel = 0
-    SizeSliderButton.Parent = SizeSliderBG
-
-    local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(1, 0)
-    ButtonCorner.Parent = SizeSliderButton
-
-    -- Label Transparência
-    local TransLabel = Instance.new("TextLabel")
-    TransLabel.Name = "TransLabel"
-    TransLabel.Size = UDim2.new(0, 140, 0, 25)
-    TransLabel.Position = UDim2.new(0, 15, 0, 135)
-    TransLabel.BackgroundTransparency = 1
-    TransLabel.Text = "👁️ Transparência: " .. math.floor(HitboxTransparency * 100) .. "%"
-    TransLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TransLabel.TextScaled = true
-    TransLabel.Font = Enum.Font.Gotham
-    TransLabel.Parent = HitboxSection
-
-    -- Slider Transparência (similar ao de tamanho)
-    local TransSliderBG = Instance.new("Frame")
-    TransSliderBG.Name = "TransSliderBG"
-    TransSliderBG.Size = UDim2.new(0, 210, 0, 25)
-    TransSliderBG.Position = UDim2.new(0, 165, 0, 135)
-    TransSliderBG.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    TransSliderBG.BorderSizePixel = 0
-    TransSliderBG.Parent = HitboxSection
-
-    local TransSliderCorner = Instance.new("UICorner")
-    TransSliderCorner.CornerRadius = UDim.new(0, 12)
-    TransSliderCorner.Parent = TransSliderBG
-
-    local TransSliderFill = Instance.new("Frame")
-    TransSliderFill.Name = "TransSliderFill"
-    TransSliderFill.Size = UDim2.new(HitboxTransparency, 0, 1, 0)
-    TransSliderFill.Position = UDim2.new(0, 0, 0, 0)
-    TransSliderFill.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    TransSliderFill.BorderSizePixel = 0
-    TransSliderFill.Parent = TransSliderBG
-
-    local TransFillCorner = Instance.new("UICorner")
-    TransFillCorner.CornerRadius = UDim.new(0, 12)
-    TransFillCorner.Parent = TransSliderFill
-
-    local TransSliderButton = Instance.new("TextButton")
-    TransSliderButton.Name = "TransSliderButton"
-    TransSliderButton.Size = UDim2.new(0, 25, 0, 25)
-    TransSliderButton.Position = UDim2.new(HitboxTransparency, -12, 0, 0)
-    TransSliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    TransSliderButton.Text = ""
-    TransSliderButton.BorderSizePixel = 0
-    TransSliderButton.Parent = TransSliderBG
-
-    local TransButtonCorner = Instance.new("UICorner")
-    TransButtonCorner.CornerRadius = UDim.new(1, 0)
-    TransButtonCorner.Parent = TransSliderButton
-
-    -- Status
-    local StatusFrame = Instance.new("Frame")
-    StatusFrame.Name = "StatusFrame"
-    StatusFrame.Size = UDim2.new(1, -20, 0, 40)
-    StatusFrame.Position = UDim2.new(0, 10, 1, -50)
-    StatusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    StatusFrame.BorderSizePixel = 0
-    StatusFrame.Parent = MainFrame
-
-    local StatusCorner = Instance.new("UICorner")
-    StatusCorner.CornerRadius = UDim.new(0, 8)
-    StatusCorner.Parent = StatusFrame
-
-    local StatusLabel = Instance.new("TextLabel")
-    StatusLabel.Name = "StatusLabel"
-    StatusLabel.Size = UDim2.new(1, -20, 1, 0)
-    StatusLabel.Position = UDim2.new(0, 10, 0, 0)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "📊 Status: HUB carregado - Aguardando ação..."
-    StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-    StatusLabel.TextScaled = true
-    StatusLabel.Font = Enum.Font.Gotham
-    StatusLabel.Parent = StatusFrame
-
+-- ===== CRIAR BOTÕES FUNCIONAIS =====
+local function createFeatureButton(name, position, icon, color)
+    local btnFrame = Instance.new("Frame")
+    btnFrame.Name = name .. "Frame"
+    btnFrame.Size = UDim2.new(1, 0, 0, 60)
+    btnFrame.Position = position
+    btnFrame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
+    btnFrame.BorderSizePixel = 0
+    btnFrame.Parent = gui.content
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = btnFrame
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.new(0.3, 0.3, 0.3)
+    btnStroke.Thickness = 1
+    btnStroke.Parent = btnFrame
+    
+    local btn = Instance.new("TextButton")
+    btn.Name = name .. "Button"
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.Position = UDim2.new(0, 0, 0, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = btnFrame
+    
+    local iconLabel = Instance.new("TextLabel")
+    iconLabel.Name = "Icon"
+    iconLabel.Size = UDim2.new(0, 40, 0, 40)
+    iconLabel.Position = UDim2.new(0, 15, 0.5, -20)
+    iconLabel.BackgroundColor3 = color
+    iconLabel.Text = icon
+    iconLabel.TextColor3 = Color3.new(1, 1, 1)
+    iconLabel.Font = Enum.Font.GothamBold
+    iconLabel.TextSize = 18
+    iconLabel.TextXAlignment = Enum.TextXAlignment.Center
+    iconLabel.TextYAlignment = Enum.TextYAlignment.Center
+    iconLabel.BorderSizePixel = 0
+    iconLabel.Parent = btnFrame
+    
+    local iconCorner = Instance.new("UICorner")
+    iconCorner.CornerRadius = UDim.new(0, 8)
+    iconCorner.Parent = iconLabel
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "Text"
+    textLabel.Size = UDim2.new(1, -120, 0, 25)
+    textLabel.Position = UDim2.new(0, 65, 0, 10)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 16
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.TextYAlignment = Enum.TextYAlignment.Center
+    textLabel.Parent = btnFrame
+    
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "Status"
+    statusLabel.Size = UDim2.new(1, -120, 0, 20)
+    statusLabel.Position = UDim2.new(0, 65, 0, 30)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.TextColor3 = Color3.new(0.7, 0.7, 0.7)
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 12
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.TextYAlignment = Enum.TextYAlignment.Center
+    statusLabel.Parent = btnFrame
+    
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = "Toggle"
+    toggleFrame.Size = UDim2.new(0, 50, 0, 25)
+    toggleFrame.Position = UDim2.new(1, -65, 0.5, -12.5)
+    toggleFrame.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = btnFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 12.5)
+    toggleCorner.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("Frame")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0, 21, 0, 21)
+    toggleButton.Position = UDim2.new(0, 2, 0.5, -10.5)
+    toggleButton.BackgroundColor3 = Color3.new(1, 1, 1)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Parent = toggleFrame
+    
+    local toggleButtonCorner = Instance.new("UICorner")
+    toggleButtonCorner.CornerRadius = UDim.new(0, 10.5)
+    toggleButtonCorner.Parent = toggleButton
+    
     return {
-        ScreenGui = ScreenGui,
-        MainFrame = MainFrame,
-        ToggleButton = ToggleButton,
-        ResetButton = ResetButton,
-        SizeSliderBG = SizeSliderBG,
-        SizeSliderButton = SizeSliderButton,
-        SizeSliderFill = SizeSliderFill,
-        SizeLabel = SizeLabel,
-        TransSliderBG = TransSliderBG,
-        TransSliderButton = TransSliderButton,
-        TransSliderFill = TransSliderFill,
-        TransLabel = TransLabel,
-        StatusLabel = StatusLabel,
-        CloseButton = CloseButton
+        frame = btnFrame,
+        button = btn,
+        icon = iconLabel,
+        text = textLabel,
+        status = statusLabel,
+        toggleFrame = toggleFrame,
+        toggleButton = toggleButton
     }
 end
 
--- Função para criar hitbox otimizada
-local function CreateHitbox(player)
-    if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return false
+-- ===== SISTEMA DE ATUALIZAÇÃO =====
+local function updateUI()
+    local t = texts[config.currentLang]
+    
+    -- Atualizar textos principais
+    gui.title.Text = t.title
+    gui.subtitle.Text = t.subtitle
+    gui.sizeLabel.Text = t.sizeLabel .. " (" .. config.headSize .. ")"
+    gui.sizeValue.Text = tostring(config.headSize)
+    
+    -- Atualizar status geral
+    local activeCount = 0
+    if config.bodyEnabled then activeCount = activeCount + 1 end
+    if config.headEnabled then activeCount = activeCount + 1 end
+    
+    gui.statusLabel.Text = "📊 " .. activeCount .. " " .. t.activeCount
+    gui.statusLabel.TextColor3 = activeCount > 0 and Color3.new(0.2, 1, 0.2) or Color3.new(1, 0.3, 0.3)
+    
+    -- Atualizar botões
+    if gui.bodyButton then
+        gui.bodyButton.text.Text = t.bodyBtn
+        gui.bodyButton.status.Text = config.bodyEnabled and t.statusOn or t.statusOff
+        gui.bodyButton.status.TextColor3 = config.bodyEnabled and Color3.new(0.2, 1, 0.2) or Color3.new(1, 0.3, 0.3)
+        
+        -- Animar toggle
+        local togglePos = config.bodyEnabled and UDim2.new(1, -23, 0.5, -10.5) or UDim2.new(0, 2, 0.5, -10.5)
+        local toggleColor = config.bodyEnabled and Color3.new(1, 0.3, 0.3) or Color3.new(0.3, 0.3, 0.3)
+        
+        TweenService:Create(gui.bodyButton.toggleButton, TweenInfo.new(0.2), {Position = togglePos}):Play()
+        TweenService:Create(gui.bodyButton.toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = toggleColor}):Play()
     end
     
-    -- Remover hitbox existente
-    if HitboxParts[player] then
-        HitboxParts[player]:Destroy()
-        HitboxParts[player] = nil
+    if gui.headButton then
+        gui.headButton.text.Text = t.headBtn
+        gui.headButton.status.Text = config.headEnabled and t.statusOn or t.statusOff
+        gui.headButton.status.TextColor3 = config.headEnabled and Color3.new(0.2, 1, 0.2) or Color3.new(1, 0.3, 0.3)
+        
+        -- Animar toggle
+        local togglePos = config.headEnabled and UDim2.new(1, -23, 0.5, -10.5) or UDim2.new(0, 2, 0.5, -10.5)
+        local toggleColor = config.headEnabled and Color3.new(0.2, 0.5, 1) or Color3.new(0.3, 0.3, 0.3)
+        
+        TweenService:Create(gui.headButton.toggleButton, TweenInfo.new(0.2), {Position = togglePos}):Play()
+        TweenService:Create(gui.headButton.toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = toggleColor}):Play()
     end
     
-    local success, hitbox = protectedCall(function()
-        local character = player.Character
-        local hrp = character.HumanoidRootPart
+    if gui.langButton then
+        gui.langButton.text.Text = t.langBtn
+        gui.langButton.status.Text = config.currentLang == "pt" and "Português" or "English"
+    end
+    
+    -- Atualizar slider
+    local sliderPercent = (config.headSize - 5) / 45
+    gui.sliderFill.Size = UDim2.new(sliderPercent, 0, 1, 0)
+    gui.sliderHandle.Position = UDim2.new(sliderPercent, -10, 0.5, -10)
+end
+
+-- ===== FUNCIONALIDADE SLIDER =====
+local function setupSlider()
+    local dragging = false
+    
+    local function updateSlider(input)
+        local sliderPos = gui.sliderBG.AbsolutePosition
+        local sliderSize = gui.sliderBG.AbsoluteSize
+        local mousePos = input.Position
         
-        -- Criar hitbox
-        local part = Instance.new("Part")
-        part.Name = "POBREZA_HITBOX_" .. player.Name
-        part.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
-        part.Material = Enum.Material.Neon
-        part.BrickColor = BrickColor.new("Really red")
-        part.Color = HitboxColor
-        part.Transparency = HitboxTransparency
-        part.CanCollide = false
-        part.CanTouch = false
-        part.Anchored = false
-        part.Shape = Enum.PartType.Ball
-        part.TopSurface = Enum.SurfaceType.Smooth
-        part.BottomSurface = Enum.SurfaceType.Smooth
+        local relativePos = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
+        local newSize = math.floor(5 + (relativePos * 45)) -- 5 to 50
         
-        -- Tentar parentar no workspace
-        part.Parent = workspace
+        config.headSize = newSize
+        config.bodySize = newSize
         
-        -- Criar weld
-        local weld = Instance.new("WeldConstraint")
-        weld.Part0 = hrp
-        weld.Part1 = part
-        weld.Parent = part
-        
-        -- Adicionar efeito visual
-        local pointLight = Instance.new("PointLight")
-        pointLight.Color = Color3.fromRGB(255, 0, 0)
-        pointLight.Brightness = 0.5
-        pointLight.Range = HitboxSize
-        pointLight.Parent = part
-        
-        return part
+        updateUI()
+    end
+    
+    gui.sliderBG.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateSlider(input)
+        end
     end)
     
-    if success and hitbox then
-        HitboxParts[player] = hitbox
-        return true
-    end
-    
-    return false
-end
-
--- Função para remover hitbox
-local function RemoveHitbox(player)
-    if HitboxParts[player] then
-        HitboxParts[player]:Destroy()
-        HitboxParts[player] = nil
-    end
-end
-
--- Função para limpar todas as hitboxes
-local function ClearAllHitboxes()
-    for player, hitbox in pairs(HitboxParts) do
-        if hitbox and hitbox.Parent then
-            hitbox:Destroy()
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input)
         end
-        HitboxParts[player] = nil
-    end
-    HitboxParts = {}
-end
-
--- Função para atualizar hitboxes
-local function UpdateAllHitboxes()
-    for player, hitbox in pairs(HitboxParts) do
-        if hitbox and hitbox.Parent then
-            hitbox.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
-            hitbox.Transparency = HitboxTransparency
-            hitbox.Color = HitboxColor
-            
-            -- Atualizar luz
-            local light = hitbox:FindFirstChild("PointLight")
-            if light then
-                light.Range = HitboxSize
-            end
-        end
-    end
-end
-
--- Toggle system
-local function ToggleHitbox(gui)
-    HitboxEnabled = not HitboxEnabled
+    end)
     
-    if HitboxEnabled then
-        -- Ativar para todos os players
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+-- ===== FUNCIONALIDADE DE ARRASTE =====
+local function setupDragging()
+    local dragging = false
+    local dragStart, startPos
+    
+    gui.header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.main.Position
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            gui.main.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+-- ===== LOOP PRINCIPAL =====
+local function setupHitboxLoop()
+    connections.hitboxLoop = RunService.RenderStepped:Connect(function()
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
-                task.spawn(function()
-                    CreateHitbox(player)
+                pcall(function()
+                    local char = player.Character
+                    
+                    -- Hitbox Cabeça
+                    local head = char:FindFirstChild("Head")
+                    if head then
+                        if not originals[head] then
+                            originals[head] = {
+                                Size = head.Size,
+                                Transparency = head.Transparency,
+                                BrickColor = head.BrickColor,
+                                Material = head.Material,
+                                CanCollide = head.CanCollide
+                            }
+                        end
+                        
+                        if config.headEnabled then
+                            head.Size = Vector3.new(config.headSize, config.headSize, config.headSize)
+                            head.Transparency = 0.6
+                            head.BrickColor = BrickColor.new("Bright blue")
+                            head.Material = Enum.Material.ForceField
+                            head.CanCollide = false
+                        else
+                            local orig = originals[head]
+                            if orig then
+                                head.Size = orig.Size
+                                head.Transparency = orig.Transparency
+                                head.BrickColor = orig.BrickColor
+                                head.Material = orig.Material
+                                head.CanCollide = orig.CanCollide
+                            end
+                        end
+                    end
+                    
+                    -- Hitbox Corpo
+                    local root = char:FindFirstChild("HumanoidRootPart")
+                    if root then
+                        if not originals[root] then
+                            originals[root] = {
+                                Size = root.Size,
+                                Transparency = root.Transparency,
+                                BrickColor = root.BrickColor,
+                                Material = root.Material,
+                                CanCollide = root.CanCollide
+                            }
+                        end
+                        
+                        if config.bodyEnabled then
+                            root.Size = Vector3.new(config.bodySize, config.bodySize, config.bodySize)
+                            root.Transparency = 0.6
+                            root.BrickColor = BrickColor.new("Bright red")
+                            root.Material = Enum.Material.ForceField
+                            root.CanCollide = false
+                        else
+                            local orig = originals[root]
+                            if orig then
+                                root.Size = orig.Size
+                                root.Transparency = orig.Transparency
+                                root.BrickColor = orig.BrickColor
+                                root.Material = orig.Material
+                                root.CanCollide = orig.CanCollide
+                            end
+                        end
+                    end
                 end)
             end
         end
-        
-        gui.ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-        gui.ToggleButton.Text = "🟢 ATIVADO"
-        gui.StatusLabel.Text = "📊 Status: Sistema ATIVO - Hitboxes aplicadas!"
-        gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-        
-    else
-        -- Desativar
-        ClearAllHitboxes()
-        
-        gui.ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-        gui.ToggleButton.Text = "🔴 DESATIVADO"
-        gui.StatusLabel.Text = "📊 Status: Sistema DESATIVADO"
-        gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
-    end
-    
-    return HitboxEnabled
-end
-
--- Função para setup de sliders
-local function SetupSliders(gui)
-    -- Size Slider
-    local sizeSliding = false
-    
-    gui.SizeSliderButton.MouseButton1Down:Connect(function()
-        sizeSliding = true
-    end)
-    
-    gui.SizeSliderBG.MouseButton1Down:Connect(function()
-        sizeSliding = true
-    end)
-    
-    Connections[#Connections + 1] = UserInputService.InputChanged:Connect(function(input)
-        if sizeSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local sliderPos = gui.SizeSliderBG.AbsolutePosition.X
-            local sliderSize = gui.SizeSliderBG.AbsoluteSize.X
-            local mouseX = input.Position.X
-            
-            local percentage = math.clamp((mouseX - sliderPos) / sliderSize, 0, 1)
-            HitboxSize = math.floor(5 + (percentage * 95)) -- 5 a 100
-            
-            gui.SizeSliderButton.Position = UDim2.new(percentage, -12, 0, 0)
-            gui.SizeSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-            gui.SizeLabel.Text = "📏 Tamanho: " .. HitboxSize
-            
-            if HitboxEnabled then
-                UpdateAllHitboxes()
-            end
-        end
-    end)
-    
-    Connections[#Connections + 1] = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            sizeSliding = false
-        end
-    end)
-    
-    -- Transparency Slider
-    local transSliding = false
-    
-    gui.TransSliderButton.MouseButton1Down:Connect(function()
-        transSliding = true
-    end)
-    
-    gui.TransSliderBG.MouseButton1Down:Connect(function()
-        transSliding = true
-    end)
-    
-    Connections[#Connections + 1] = UserInputService.InputChanged:Connect(function(input)
-        if transSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local sliderPos = gui.TransSliderBG.AbsolutePosition.X
-            local sliderSize = gui.TransSliderBG.AbsoluteSize.X
-            local mouseX = input.Position.X
-            
-            local percentage = math.clamp((mouseX - sliderPos) / sliderSize, 0, 1)
-            HitboxTransparency = percentage
-            
-            gui.TransSliderButton.Position = UDim2.new(percentage, -12, 0, 0)
-            gui.TransSliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-            gui.TransLabel.Text = "👁️ Transparência: " .. math.floor(HitboxTransparency * 100) .. "%"
-            
-            if HitboxEnabled then
-                UpdateAllHitboxes()
-            end
-        end
-    end)
-    
-    Connections[#Connections + 1] = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            transSliding = false
-        end
     end)
 end
 
--- Função principal de execução
-local function Main()
+-- ===== INICIALIZAÇÃO =====
+local function init()
     -- Criar GUI
-    local gui = CreateHubGui()
+    createGUI()
     
-    -- Setup dos sliders
-    SetupSliders(gui)
+    -- Criar botões funcionais
+    gui.bodyButton = createFeatureButton("Body", UDim2.new(0, 0, 0, 160), "💀", Color3.new(1, 0.3, 0.3))
+    gui.headButton = createFeatureButton("Head", UDim2.new(0, 0, 0, 230), "🎯", Color3.new(0.2, 0.5, 1))
+    gui.langButton = createFeatureButton("Lang", UDim2.new(0, 0, 0, 300), "🌐", Color3.new(0.3, 0.8, 0.3))
     
-    -- Conectar eventos dos botões
-    gui.ToggleButton.MouseButton1Click:Connect(function()
-        ToggleHitbox(gui)
+    -- Configurar eventos dos botões
+    gui.bodyButton.button.MouseButton1Click:Connect(function()
+        config.bodyEnabled = not config.bodyEnabled
+        
+        -- Efeito visual
+        TweenService:Create(gui.bodyButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 5, 0, 65)}):Play()
+        wait(0.1)
+        TweenService:Create(gui.bodyButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 60)}):Play()
+        
+        updateUI()
     end)
     
-    gui.ResetButton.MouseButton1Click:Connect(function()
-        ClearAllHitboxes()
-        gui.StatusLabel.Text = "📊 Status: Hitboxes removidas!"
-        gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
+    gui.headButton.button.MouseButton1Click:Connect(function()
+        config.headEnabled = not config.headEnabled
         
-        task.wait(2)
+        -- Efeito visual
+        TweenService:Create(gui.headButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 5, 0, 65)}):Play()
+        wait(0.1)
+        TweenService:Create(gui.headButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 60)}):Play()
         
-        if HitboxEnabled then
-            gui.StatusLabel.Text = "📊 Status: Sistema ATIVO - Hitboxes aplicadas!"
-            gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-        else
-            gui.StatusLabel.Text = "📊 Status: Sistema DESATIVADO"
-            gui.StatusLabel.TextColor3 = Color3.fromRGB(255, 193, 7)
+        updateUI()
+    end)
+    
+    gui.langButton.button.MouseButton1Click:Connect(function()
+        config.currentLang = (config.currentLang == "pt") and "en" or "pt"
+        
+        -- Efeito visual
+        TweenService:Create(gui.langButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 5, 0, 65)}):Play()
+        wait(0.1)
+        TweenService:Create(gui.langButton.frame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 60)}):Play()
+        
+        updateUI()
+    end)
+    
+    -- Botão fechar
+    gui.closeBtn.MouseButton1Click:Connect(function()
+        config.guiVisible = not config.guiVisible
+        gui.main.Visible = config.guiVisible
+        
+        -- Efeito de fade
+        if config.guiVisible then
+            gui.main.BackgroundTransparency = 1
+            TweenService:Create(gui.main, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
         end
     end)
     
-    gui.CloseButton.MouseButton1Click:Connect(function()
-        ClearAllHitboxes()
-        
-        -- Desconectar todas as conexões
-        for _, connection in pairs(Connections) do
-            if connection then
-                connection:Disconnect()
+    -- Hotkey F para mostrar/ocultar
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.F then
+            config.guiVisible = not config.guiVisible
+            
+            if config.guiVisible then
+                gui.main.Visible = true
+                gui.main.Size = UDim2.new(0, 0, 0, 0)
+                gui.main.Position = UDim2.new(0.5, 0, 0.5, 0)
+                
+                TweenService:Create(gui.main, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
+                    Size = UDim2.new(0, 320, 0, 400),
+                    Position = UDim2.new(0, 20, 0.5, -200)
+                }):Play()
+            else
+                TweenService:Create(gui.main, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+                    Size = UDim2.new(0, 0, 0, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0)
+                }):Play()
+                
+                wait(0.3)
+                gui.main.Visible = false
             end
         end
-        
-        gui.ScreenGui:Destroy()
     end)
     
-    -- Eventos de players
-    Connections[#Connections + 1] = Players.PlayerAdded:Connect(function(player)
-        if player ~= LocalPlayer then
-            Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
-                task.wait(1) -- Aguardar character carregar
-                if HitboxEnabled then
-                    CreateHitbox(player)
-                end
-            end)
-        end
-    end)
+    -- Configurar funcionalidades
+    setupSlider()
+    setupDragging()
+    setupHitboxLoop()
     
-    Connections[#Connections + 1] = Players.PlayerRemoving:Connect(function(player)
-        RemoveHitbox(player)
-    end)
+    -- Atualizar UI inicial
+    updateUI()
     
-    -- Setup para players existentes
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if player.Character then
-                -- Player já tem character
-                Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
-                    task.wait(1)
-                    if HitboxEnabled then
-                        CreateHitbox(player)
-                    end
-                end)
-            else
-                -- Aguardar character spawnar
-                Connections[#Connections + 1] = player.CharacterAdded:Connect(function()
-                    task.wait(1)
-                    if HitboxEnabled then
-                        CreateHitbox(player)
-                    end
-                end)
+    -- Animação de entrada
+    gui.main.Size = UDim2.new(0, 0, 0, 0)
+    gui.main.Position = UDim2.new(0.5, 0, 0.5, 0)
+    
+    TweenService:Create(gui.main, TweenInfo.new(0.8, Enum.EasingStyle.Back), {
+        Size = UDim2.new(0, 320, 0, 400),
+        Position = UDim2.new(0, 20, 0.5, -200)
+    }):Play()
+    
+    -- Mensagem de boas-vindas
+    createWelcomeMessage()
+end
+
+-- ===== MENSAGEM DE BOAS-VINDAS =====
+local function createWelcomeMessage()
+    local welcomeFrame = Instance.new("Frame")
+    welcomeFrame.Name = "WelcomeFrame"
+    welcomeFrame.Size = UDim2.new(0, 300, 0, 100)
+    welcomeFrame.Position = UDim2.new(0.5, -150, 0, 50)
+    welcomeFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+    welcomeFrame.BorderSizePixel = 0
+    welcomeFrame.Parent = gui.screen
+    
+    local welcomeCorner = Instance.new("UICorner")
+    welcomeCorner.CornerRadius = UDim.new(0, 15)
+    welcomeCorner.Parent = welcomeFrame
+    
+    local welcomeStroke = Instance.new("UIStroke")
+    welcomeStroke.Color = Color3.new(1, 0.85, 0)
+    welcomeStroke.Thickness = 2
+    welcomeStroke.Parent = welcomeFrame
+    
+    local welcomeGradient = Instance.new("UIGradient")
+    welcomeGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(0.08, 0.08, 0.08)),
+        ColorSequenceKeypoint.new(1, Color3.new(0.02, 0.02, 0.02))
+    })
+    welcomeGradient.Rotation = 45
+    welcomeGradient.Parent = welcomeFrame
+    
+    local welcomeTitle = Instance.new("TextLabel")
+    welcomeTitle.Size = UDim2.new(1, -20, 0, 35)
+    welcomeTitle.Position = UDim2.new(0, 10, 0, 10)
+    welcomeTitle.BackgroundTransparency = 1
+    welcomeTitle.TextColor3 = Color3.new(1, 0.85, 0)
+    welcomeTitle.Font = Enum.Font.GothamBold
+    welcomeTitle.TextSize = 18
+    welcomeTitle.Text = "🔥 HUB POBREZA V3.0 CARREGADO!"
+    welcomeTitle.TextXAlignment = Enum.TextXAlignment.Center
+    welcomeTitle.Parent = welcomeFrame
+    
+    local welcomeSubtitle = Instance.new("TextLabel")
+    welcomeSubtitle.Size = UDim2.new(1, -20, 0, 25)
+    welcomeSubtitle.Position = UDim2.new(0, 10, 0, 45)
+    welcomeSubtitle.BackgroundTransparency = 1
+    welcomeSubtitle.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+    welcomeSubtitle.Font = Enum.Font.Gotham
+    welcomeSubtitle.TextSize = 12
+    welcomeSubtitle.Text = "Pressione 'F' para mostrar/ocultar • Desenvolvido por Poverty Team"
+    welcomeSubtitle.TextXAlignment = Enum.TextXAlignment.Center
+    welcomeSubtitle.Parent = welcomeFrame
+    
+    -- Animação de entrada
+    welcomeFrame.Position = UDim2.new(0.5, -150, 0, -100)
+    welcomeFrame.BackgroundTransparency = 1
+    welcomeTitle.TextTransparency = 1
+    welcomeSubtitle.TextTransparency = 1
+    welcomeStroke.Transparency = 1
+    
+    -- Animar entrada
+    TweenService:Create(welcomeFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
+        Position = UDim2.new(0.5, -150, 0, 50),
+        BackgroundTransparency = 0
+    }):Play()
+    
+    TweenService:Create(welcomeStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
+    TweenService:Create(welcomeTitle, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+    TweenService:Create(welcomeSubtitle, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+    
+    -- Auto-fechar após 4 segundos
+    wait(4)
+    
+    TweenService:Create(welcomeFrame, TweenInfo.new(0.5), {
+        Position = UDim2.new(0.5, -150, 0, -100),
+        BackgroundTransparency = 1
+    }):Play()
+    
+    TweenService:Create(welcomeStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    TweenService:Create(welcomeTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(welcomeSubtitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    
+    wait(0.5)
+    welcomeFrame:Destroy()
+end
+
+-- ===== SISTEMA DE NOTIFICAÇÕES =====
+local function createNotification(text, color, duration)
+    local notifFrame = Instance.new("Frame")
+    notifFrame.Name = "NotificationFrame"
+    notifFrame.Size = UDim2.new(0, 250, 0, 50)
+    notifFrame.Position = UDim2.new(1, 20, 0, 100)
+    notifFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
+    notifFrame.BorderSizePixel = 0
+    notifFrame.Parent = gui.screen
+    
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.CornerRadius = UDim.new(0, 10)
+    notifCorner.Parent = notifFrame
+    
+    local notifStroke = Instance.new("UIStroke")
+    notifStroke.Color = color
+    notifStroke.Thickness = 2
+    notifStroke.Parent = notifFrame
+    
+    local notifLabel = Instance.new("TextLabel")
+    notifLabel.Size = UDim2.new(1, -20, 1, 0)
+    notifLabel.Position = UDim2.new(0, 10, 0, 0)
+    notifLabel.BackgroundTransparency = 1
+    notifLabel.TextColor3 = Color3.new(1, 1, 1)
+    notifLabel.Font = Enum.Font.Gotham
+    notifLabel.TextSize = 14
+    notifLabel.Text = text
+    notifLabel.TextXAlignment = Enum.TextXAlignment.Left
+    notifLabel.TextYAlignment = Enum.TextYAlignment.Center
+    notifLabel.Parent = notifFrame
+    
+    -- Animação de entrada
+    TweenService:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+        Position = UDim2.new(1, -270, 0, 100)
+    }):Play()
+    
+    -- Auto-remover
+    wait(duration or 3)
+    
+    TweenService:Create(notifFrame, TweenInfo.new(0.3), {
+        Position = UDim2.new(1, 20, 0, 100)
+    }):Play()
+    
+    wait(0.3)
+    notifFrame:Destroy()
+end
+
+-- ===== LIMPEZA E OTIMIZAÇÃO =====
+Players.PlayerRemoving:Connect(function(player)
+    if player.Character then
+        for _, part in pairs(player.Character:GetChildren()) do
+            if originals[part] then
+                originals[part] = nil
             end
         end
     end
-    
-    -- Sistema de monitoramento
-    task.spawn(function()
-        while gui.ScreenGui and gui.ScreenGui.Parent do
-            task.wait(3)
-            if HitboxEnabled then
-                local count = 0
-                for _ in pairs(HitboxParts) do
-                    count = count + 1
-                end
-                gui.StatusLabel.Text = "📊 Status: " .. count .. " hitboxes ativas"
-                gui.StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
-            end
+end)
+
+-- ===== EXECUTAR INICIALIZAÇÃO =====
+init()
+
+-- ===== SISTEMA DE DEBUG (OPCIONAL) =====
+local function debugLog(message)
+    if config.debugMode then
+        print("[HUB POBREZA V3.0] " .. message)
+    end
+end
+
+-- ===== COMANDOS DE CONSOLE (OPCIONAL) =====
+local function setupConsoleCommands()
+    -- Comando para alternar debug
+    game.Players.LocalPlayer.Chatted:Connect(function(message)
+        if message:lower() == "/poverty debug" then
+            config.debugMode = not config.debugMode
+            createNotification("Debug Mode: " .. (config.debugMode and "ON" or "OFF"), 
+                             Color3.new(0.3, 0.8, 0.3), 2)
+        elseif message:lower() == "/poverty reset" then
+            -- Reset todas as configurações
+            config.bodyEnabled = false
+            config.headEnabled = false
+            config.headSize = 20
+            config.bodySize = 20
+            updateUI()
+            createNotification("Configurações resetadas!", Color3.new(1, 0.85, 0), 2)
+        elseif message:lower() == "/poverty hide" then
+            config.guiVisible = false
+            gui.main.Visible = false
+        elseif message:lower() == "/poverty show" then
+            config.guiVisible = true
+            gui.main.Visible = true
         end
     end)
-    
-    -- Mensagens de sucesso
-    print("🏠============================🏠")
-    print("🎯 HUB POBREZA CARREGADO! 🎯")
-    print("🏠============================🏠")
-    print("✅ Compatível com TODOS executores")
-    print("✅ Sistema de hitbox otimizado") 
-    print("✅ Interface moderna e responsiva")
-    print("✅ Detecção automática de players")
-    print("✅ Controles avançados de tamanho/transparência")
-    print("🚀 Pronto para dominar! 🚀")
-    
-    gui.
+end
+
+setupConsoleCommands()
+
+debugLog("HUB POBREZA V3.0 inicializado com sucesso!")
+debugLog("Pressione 'F' para mostrar/ocultar o menu")
+debugLog("Use '/poverty debug' para ativar o modo debug")
